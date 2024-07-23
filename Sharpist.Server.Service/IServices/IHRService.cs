@@ -9,7 +9,7 @@ public interface IHRService
     Task<HRForResultDto> RetrieveByIdAsync(int id);
     Task<HRForResultDto> AddAsync(HRForCreationDto dto);
     Task<HRForResultDto> ModifyAsync(int id, HRForUpdateDto dto);
-    Task<HRForResultDto> RetrieveByEmailAsync(string email);
+    Task<HRForResultDto> RetrieveByEmailAsync(string Email);
     Task<IEnumerable<HRForResultDto>> RetrieveAllAsync(PaginationParams @params);
     Task<bool> ForgetPasswordAsync(string Email, string NewPassword, string ConfirmPassword);
 }

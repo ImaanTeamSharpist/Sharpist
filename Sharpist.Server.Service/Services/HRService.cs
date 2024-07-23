@@ -1,165 +1,140 @@
-﻿//using AutoMapper;
-//using Microsoft.Extensions.Configuration;
-//using Sharpist.Server.Data.IRepositories;
-//using Sharpist.Server.Domain.Configurations;
-//using Sharpist.Server.Domain.Entities;
-//using Sharpist.Server.Service.DTOs.HRs;
-//using Sharpist.Server.Service.IServices;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Sharpist.Server.Data.IRepositories;
+using Sharpist.Server.Domain.Configurations;
+using Sharpist.Server.Domain.Entities;
+using Sharpist.Server.Service.Commons.Extentions;
+using Sharpist.Server.Service.DTOs.HRs;
+using Sharpist.Server.Service.Exceptions;
+using Sharpist.Server.Service.Helpers;
+using Sharpist.Server.Service.IServices;
+using System.ComponentModel.DataAnnotations;
 
-//namespace Sharpist.Server.Service.Services;
+namespace Sharpist.Server.Service.Services;
 
-//public class HRService : IHRService
-//{
-//    private readonly IMapper mapper;
-//    private readonly IConfiguration configuration;
-//    private readonly IRepository<HR> repository;
+public class HRService : IHRService
+{
+    private readonly IMapper mapper;
+    private readonly IConfiguration configuration;
+    private readonly IRepository<HR> repository;
 
-//    public HRService(
-//        IMapper mapper,
-//        IConfiguration configuration,
-//        IRepository<HR> repository)
-//    {
-//        this.mapper = mapper;
-//        this.configuration = configuration;
-//        this.repository = repository;
-//    }
+    public HRService(
+        IMapper mapper,
+        IConfiguration configuration,
+        IRepository<HR> repository)
+    {
+        this.mapper = mapper;
+        this.configuration = configuration;
+        this.repository = repository;
+    }
 
-//    public async Task<HRForResultDto> AddAsync(HRForCreationDto dto)
-//    {
-//        var user = await this.repository.SelectAsync(u => u.PhoneNumber == dto.PhoneNumber);
-//        if (user is not null)
-//            throw new CustomException(403, "User is already exists");
+    public async Task<HRForResultDto> AddAsync(HRForCreationDto dto)
+    {
+        var user = await this.repository.SelectAsync(u => u.Email == dto.Email);
+        if (user is not null)
+            throw new CustomException(403, "HR is already exists");
 
-//        var hasherResult = PasswordHelper.Hash(dto.Password);
-//        var mapped = this.mapper.Map<User>(dto);
+        var hasherResult = PasswordHelper.Hash(dto.Password);
+        var mapped = this.mapper.Map<HR>(dto);
 
-//        mapped.CreatedAt = TimeHelper.GetCurrentServerTime();
-//        mapped.Salt = hasherResult.Salt;
-//        mapped.Password = hasherResult.Hash;
+        mapped.CreatedAt = DateTime.UtcNow;
+        mapped.Password = hasherResult.Hash;
 
-//        var result = await this.repository.InsertAsync(mapped);
-//        await this.repository.SaveAsync();
-//        return this.mapper.Map<UserForResultDto>(result);
-//    }
+        var result = await this.repository.InsertAsync(mapped);
+        await this.repository.SaveAsync();
+        return this.mapper.Map<HRForResultDto>(result);
+    }
 
-//    public async Task<bool> ChangePasswordAsync(long id, UserForChangePasswordDto dto)
-//    {
-//        var user = await this.repository.SelectAsync(u => u.Id == id);
-//        if (user is null || !PasswordHelper.Verify(dto.OldPassword, user.Salt, user.Password))
-//            throw new CustomException(404, "User or Password is incorrect");
-//        else if (dto.NewPassword != dto.ConfirmPassword)
-//            throw new CustomException(400, "New password and confir password aren't equal");
+   
 
-//        var hash = PasswordHelper.Hash(dto.ConfirmPassword);
-//        user.Salt = hash.Salt;
-//        user.Password = hash.Hash;
-//        var updated = this.repository.Update(user);
+    public async Task<bool> ForgetPasswordAsync(string Email, string NewPassword, string ConfirmPassword)
+    {
+        var user = await this.repository.SelectAsync(u => u.Email == Email);
 
-//        return await this.repository.SaveAsync();
+        if (user is null)
+            throw new CustomException(404, "HR not found");
 
-//    }
+        if (NewPassword != ConfirmPassword)
+            throw new CustomException(400, "New password and confirm password aren't equal");
 
-//    public async Task<bool> ForgetPasswordAsync(string PhoneNumber, string NewPassword, string ConfirmPassword)
-//    {
-//        var user = await this.repository.SelectAsync(u => u.PhoneNumber == PhoneNumber);
+        var hash = PasswordHelper.Hash(NewPassword);
 
-//        if (user is null)
-//            throw new CustomException(404, "User not found");
+        user.Password = hash.Hash;
 
-//        if (NewPassword != ConfirmPassword)
-//            throw new CustomException(400, "New password and confirm password aren't equal");
+        var updated = this.repository.Update(user);
 
-//        var hash = PasswordHelper.Hash(NewPassword);
+        return await this.repository.SaveAsync();
+    }
 
-//        user.Salt = hash.Salt;
-//        user.Password = hash.Hash;
+    public async Task<HRForResultDto> ModifyAsync(int id, HRForUpdateDto dto)
+    {
+        var user = await this.repository.SelectAsync(u => u.Id == id);
+        if (user is null)
+            throw new CustomException(404, "HR not found");
 
-//        var updated = this.repository.Update(user);
+        if (dto is not null)
+        {
+            user.Name = string.IsNullOrEmpty(dto.Name) ? user.Name : dto.Name;
+            user.LastName = string.IsNullOrEmpty(dto.LastName) ? user.LastName : dto.LastName;
+            user.Email = string.IsNullOrEmpty(dto.Email) ? user.Email: dto.Email;
 
-//        return await this.repository.SaveAsync();
-//    }
+            user.UpdatedAt = DateTime.UtcNow;
+            this.repository.Update(user);
+            var result = await this.repository.SaveAsync();
+        }
+        var person = this.mapper.Map(dto, user);
+        /* await this.repository.SaveAsync();*/
 
-//    public async Task<UserForResultDto> ModifyAsync(long id, UserForUpdateDto dto)
-//    {
-//        var user = await this.repository.SelectAsync(u => u.Id == id);
-//        if (user is null)
-//            throw new CustomException(404, "User not found");
+        return this.mapper.Map<HRForResultDto>(person);
+    }
 
-//        if (dto is not null)
-//        {
-//            user.FirstName = string.IsNullOrEmpty(dto.FirstName) ? user.FirstName : dto.FirstName;
-//            user.LastName = string.IsNullOrEmpty(dto.LastName) ? user.LastName : dto.LastName;
-//            user.PhoneNumber = string.IsNullOrEmpty(dto.PhoneNumber) ? user.PhoneNumber : dto.PhoneNumber;
+    public async Task<bool> RemoveAsync(int id)
+    {
+        var user = await repository.SelectAsync(u => u.Id == id);
+        if (user is null)
+            throw new CustomException(404, "HR not found");
 
-//            user.UpdatedAt = TimeHelper.GetCurrentServerTime();
-//            this.repository.Update(user);
-//            var result = await this.repository.SaveAsync();
-//        }
-//        var person = this.mapper.Map(dto, user);
-//        /* await this.repository.SaveAsync();*/
+        await repository.DeleteAsync(id);
+        var result = await this.repository.SaveAsync();
+        return result;
+    }
 
-//        return this.mapper.Map<UserForResultDto>(person);
-//    }
+    public async Task<IEnumerable<HRForResultDto>> RetrieveAllAsync(PaginationParams @params)
+    {
+        var users = await this.repository.SelectAll()
+            .Where(x => x.Email != null)
+            .AsNoTracking()
+            .ToPagedList(@params)
+            .ToListAsync();
 
-//    public async Task<UserForResultDto> ModifyTelegramId(long id, long telegramId)
-//    {
-//        var user = await this.repository.SelectAll()
-//            .Where(u => u.Id == id)
-//            .FirstOrDefaultAsync();
-//        if (user is null)
-//            throw new CustomException(404, "User is not found");
+        var mappedUsers = this.mapper.Map<IEnumerable<HRForResultDto>>(users);
 
-//        await this.repository.SaveAsync();
+        return mappedUsers;
+    }
 
-//        return this.mapper.Map<UserForResultDto>(user);
-//    }
+    public async Task<HRForResultDto> RetrieveByIdAsync(int id)
+    {
+        var user = await this.repository.SelectAll()
+        .Where(u => u.Id == id)
+        .AsNoTracking()
+        .FirstOrDefaultAsync();
 
-//    public async Task<bool> RemoveAsync(long id)
-//    {
-//        var user = await repository.SelectAsync(u => u.Id == id);
-//        if (user is null)
-//            throw new CustomException(404, "User not found");
+        if (user is null)
+            throw new CustomException(404, "HR Not Found");
 
-//        await repository.DeleteAsync(id);
-//        var result = await this.repository.SaveAsync();
-//        return result;
-//    }
-
-//    public async Task<IEnumerable<UserForResultDto>> RetrieveAllAsync(PaginationParams @params)
-//    {
-//        var users = await this.repository.SelectAll()
-//            .Where(x => x.Role.Equals((UserRole)0))
-//            .AsNoTracking()
-//            .ToPagedList(@params)
-//            .ToListAsync();
-
-//        var mappedUsers = this.mapper.Map<IEnumerable<UserForResultDto>>(users);
-
-//        return mappedUsers;
-//    }
-
-//    public async Task<UserForResultDto> RetrieveByIdAsync(long id)
-//    {
-//        var user = await this.repository.SelectAll()
-//        .Where(u => u.Id == id)
-//        .AsNoTracking()
-//        .FirstOrDefaultAsync();
-
-//        if (user is null)
-//            throw new CustomException(404, "User Not Found");
-
-//        var userDto = this.mapper.Map<UserForResultDto>(user);
-//        return userDto;
-//    }
+        var userDto = this.mapper.Map<HRForResultDto>(user);
+        return userDto;
+    }
 
 
 
-//    public async Task<UserForResultDto> RetrieveByPhoneNumberAsync(string phoneNumber)
-//    {
-//        var user = await this.repository.SelectAsync(u => u.PhoneNumber == phoneNumber);
-//        if (user is null)
-//            throw new CustomException(404, "User Not Found");
+    public async Task<HRForResultDto> RetrieveByEmailAsync(string Email)
+    {
+        var user = await this.repository.SelectAsync(u => u.Email == Email);
+        if (user is null)
+            throw new CustomException(404, "HR Not Found");
 
-//        return this.mapper.Map<UserForResultDto>(user);
-//    }
-//}
+        return this.mapper.Map<HRForResultDto>(user);
+    }
+}
