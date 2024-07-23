@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace Sharpist.Server.API.Commons;
+namespace Sharpist.Server.API.Controllers.Commons;
 
 [ApiController]
 [Route("api/[controller]")]

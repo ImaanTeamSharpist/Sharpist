@@ -3,7 +3,7 @@ using Sharpist.Server.API.Models;
 using Sharpist.Server.Service.DTOs.Login;
 using Sharpist.Server.Service.IServices;
 
-namespace Sharpist.Server.API.Commons;
+namespace Sharpist.Server.API.Controllers.Commons;
 
 public class AuthController : BaseController
 {
