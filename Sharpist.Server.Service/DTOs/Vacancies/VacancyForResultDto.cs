@@ -1,7 +1,8 @@
 ﻿namespace Sharpist.Server.Service.DTOs.Vacancies;
 
-public class VacancyForCreationDto
+public class VacancyForResultDto
 {
+    public int Id { get; set; }
     public string JobName { get; set; } = "";
     public string JobDescription { get; set; } = "";
     public string Requirements { get; set; } = "";

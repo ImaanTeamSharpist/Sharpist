@@ -1,6 +1,6 @@
 ﻿namespace Sharpist.Server.Service.DTOs.HRs;
 
-public class HRForCreationDto
+public class HRForUpdateDto
 {
     public string Name { get; set; } = "";
     public string Email { get; set; } = "";
