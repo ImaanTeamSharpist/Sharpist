@@ -1,0 +1,6 @@
+@Sharpist.Server.API_HostAddress = http://localhost:5232
+
+GET {{Sharpist.Server.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
