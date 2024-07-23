@@ -1,4 +1,7 @@
 
+using Microsoft.EntityFrameworkCore;
+using Sharpist.Server.Data.Contexts;
+
 namespace Sharpist.Server.API
 {
     public class Program
@@ -7,6 +10,8 @@ namespace Sharpist.Server.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
             // Add services to the container.
 
             builder.Services.AddControllers();
