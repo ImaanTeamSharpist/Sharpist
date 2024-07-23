@@ -1,6 +1,9 @@
 
 using Microsoft.EntityFrameworkCore;
+using Sharpist.Server.API.Extensions;
+using Sharpist.Server.API.Models;
 using Sharpist.Server.Data.Contexts;
+using Sharpist.Server.Service.Mappers;
 
 namespace Sharpist.Server.API
 {
@@ -17,7 +20,18 @@ namespace Sharpist.Server.API
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            // Configure Servervice
+            builder.Services.AddCustomServices();
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddAutoMapper(typeof(MapperProfile));
+
+            // CORS
+            builder.Services.ConfigureCors();
+
+            // swagger set up
+            builder.Services.AddSwaggerService();
+            // JWT service
+            builder.Services.AddJwtService(builder.Configuration);
 
             var app = builder.Build();
 
@@ -28,10 +42,14 @@ namespace Sharpist.Server.API
                 app.UseSwaggerUI();
             }
 
+            app.UseCors("AllowAll");
+
             app.UseHttpsRedirection();
 
-            app.UseAuthorization();
+            app.UseMiddleware<ExceptionHandlerMiddleware>();
 
+            app.UseAuthentication();
+            app.UseAuthorization();
 
             app.MapControllers();
 
