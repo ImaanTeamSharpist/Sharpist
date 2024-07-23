@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Sharpist.Server.API.Extensions;
 using Sharpist.Server.API.Models;
 using Sharpist.Server.Data.Contexts;
+using Sharpist.Server.Service.Helpers;
 using Sharpist.Server.Service.Mappers;
 
 namespace Sharpist.Server.API
@@ -34,6 +35,7 @@ namespace Sharpist.Server.API
             builder.Services.AddJwtService(builder.Configuration);
 
             var app = builder.Build();
+            WebHostEnviromentHelper.WebRootPath = Path.GetFullPath("wwwroot");
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

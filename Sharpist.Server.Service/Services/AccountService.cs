@@ -19,13 +19,13 @@ public class AccountService : IAccountService
     }
     public async Task<string> LoginAsync(LoginDto loginDto)
     {
-        var user = await userRepository.SelectAsync(x => x.Email == loginDto.Email);
+        var user = await userRepository.SelectAsync(x => x.Email.ToLower() == loginDto.Email.ToLower());
         if (user is null)
-            throw new CustomException(404, "Phone number or password entered wrong!");
+            throw new CustomException(404, "Email or password entered wrong!");
 
         var hasherResult = PasswordHelper.Verify(loginDto.Password, user.Password);
         if (hasherResult == false)
-            throw new CustomException(404, "Phone number or password entered wrong!");
+            throw new CustomException(404, "Email or password entered wrong!");
 
         return authService.GenerateToken(user);
     }

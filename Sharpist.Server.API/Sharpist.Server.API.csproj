@@ -26,4 +26,8 @@
 		<ProjectReference Include="..\Sharpist.Server.Service\Sharpist.Server.Service.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="wwwroot\" />
+	</ItemGroup>
+
 </Project>

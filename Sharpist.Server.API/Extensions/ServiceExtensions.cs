@@ -67,6 +67,10 @@ public static class ServiceExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IHRService, HRService>();
         services.AddScoped<IAccountService, AccountService>();
+        services.AddScoped<IVacancyService, VacancyService>();
+        services.AddScoped<IPdfToTextService, PdfToTextService>();
+        services.AddScoped<IResumeService, ResumeService>();
+
 
         //services.AddScoped<IConfigurationSection>(provider =>
         //{

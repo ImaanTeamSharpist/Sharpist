@@ -10,6 +10,6 @@ public interface IVacancyService
     Task<VacancyForResultDto> AddAsync(VacancyForCreationDto dto);
     Task<VacancyForResultDto> ModifyAsync(int id, VacancyForUpdateDto dto);
     Task<VacancyForResultDto> RetrieveByJobNameAsync(string JobName);
-    Task<VacancyForResultDto> RetrieveBySalary(string Salary);
+    Task<VacancyForResultDto> RetrieveBySalaryAsync(string Salary);
     Task<IEnumerable<VacancyForResultDto>> RetrieveAllAsync(PaginationParams @params);
 }
