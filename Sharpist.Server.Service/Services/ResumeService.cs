@@ -117,19 +117,17 @@ public class ResumeService : IResumeService
         return userDto;
     }
 
-    public async Task<ResumeForResultDto> RetrieveByVacancyIdAsync(int VacancyId)
+    public async Task<IEnumerable<ResumeForResultDto>> RetrieveByVacancyIdAsync(PaginationParams @params, int id)
     {
-        var vac = vacancyRepository.SelectAsync(x => x.Id == VacancyId);
-        if (vac is null) 
-            throw new CustomException(404, "Resume not found");
+        var users = await this.repository.SelectAll()
+            .Where(u => u.VacancyID == id)
+            .AsNoTracking()
+            .ToPagedList(@params)
+            .ToListAsync();
 
-        var user = await this.repository.SelectAll()
-        .Where(u => u.VacancyID == VacancyId )
-        .AsNoTracking()
-        .FirstOrDefaultAsync();
+        var mappedUsers = this.mapper.Map<IEnumerable<ResumeForResultDto>>(users);
 
-        var userDto = this.mapper.Map<ResumeForResultDto>(user);
-        return userDto;
+        return mappedUsers;
     }
 
     public async Task<ResumeForResultDto> RetrieveByEmailAsync(string Email)
