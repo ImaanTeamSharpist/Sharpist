@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Sharpist.Server.Data.IRepositories;
@@ -9,7 +10,6 @@ using Sharpist.Server.Service.DTOs.Resumes;
 using Sharpist.Server.Service.Exceptions;
 using Sharpist.Server.Service.Helpers;
 using Sharpist.Server.Service.IServices;
-using System.Formats.Tar;
 using UglyToad.PdfPig;
 
 namespace Sharpist.Server.Service.Services;
@@ -21,23 +21,33 @@ public class ResumeService : IResumeService
     private readonly IRepository<Resume> repository;
     private readonly IRepository<Vacancy> vacancyRepository;
     private readonly IPdfToTextService pdfToTextService;
-
+    private readonly IOpenAIHelperService openAIHelperService;
+    private readonly IEmailService emailService;
     public ResumeService(
         IMapper mapper,
         IConfiguration configuration,
         IRepository<Resume> repository,
         IRepository<Vacancy> vacancyRepository,
-        IPdfToTextService pdfToTextService)
+        IPdfToTextService pdfToTextService,
+        IOpenAIHelperService openAIHelperService,
+        IEmailService emailService)
     {
         this.mapper = mapper;
         this.configuration = configuration;
         this.repository = repository;
         this.vacancyRepository = vacancyRepository;
         this.pdfToTextService = pdfToTextService;
+        this.openAIHelperService = openAIHelperService;
+        this.emailService = emailService;
     }
 
     public async Task<ResumeForResultDto> AddAsync(ResumeForCreationDto dto)
     {
+        var vacancy = await this.vacancyRepository.SelectAsync(v => v.Id == dto.VacancyID && v.IsActive);
+        if (vacancy is null)
+        {
+            throw new CustomException(404, "Vacancy not found");
+        }
         var user = await this.repository.SelectAsync(u => u.Email == dto.Email && u.VacancyID == dto.VacancyID);
         if (user is not null)
             throw new CustomException(403, "Resume is already exists");
@@ -69,10 +79,31 @@ public class ResumeService : IResumeService
         string resultImage = Path.Combine("Media", "Resumes", fileName);
 
         var mapped = mapper.Map<Resume>(dto);
+        await this.repository.SaveAsync();
         mapped.FilePath = resultImage;
         mapped.CreatedAt = DateTime.UtcNow;
-        PdfDocument smthing = mapper.Map<PdfDocument>(dto.FilePath);
-        mapped.Text = await pdfToTextService.PdfToTextAsync(smthing);
+
+        //iform file to pdf
+        if (dto.FilePath == null || dto.FilePath.Length == 0)
+        {
+            throw new ArgumentException("Invalid file");
+        }
+
+        // Read the file stream
+        using (var stream = new MemoryStream())
+        {
+            dto.FilePath.CopyTo(stream);
+            stream.Position = 0; // Reset stream position to the beginning
+
+            // Load the PDF document from the stream
+            var pdfDocument = PdfDocument.Open(stream);
+            mapped.Text = await pdfToTextService.PdfToTextAsync(pdfDocument);
+            string requirements = $"JobName: {vacancy.JobName}, Job Description: {vacancy.JobDescription}, Salary: {vacancy.Salary}, Requirements: {vacancy.Requirements}";
+
+            var openAi = openAIHelperService.CheckResumeCompatibility(mapped.Text, requirements);
+            if (openAi != null)
+                await emailService.SendMessageToEmailAsync(mapped.Email, "Status of your CV", "Hello! We are checking for your CV now");
+        }
 
         var result = await this.repository.InsertAsync(mapped);
         await this.repository.SaveAsync();

@@ -31,16 +31,19 @@ public class VacancyService : IVacancyService
     public async Task<VacancyForResultDto> AddAsync(VacancyForCreationDto dto)
     {
         var user = await this.repository.SelectAsync(u => u.JobName == dto.JobName && u.Requirements == dto.Requirements);
-        if (user.IsActive)
-            throw new CustomException(403, "Vacancy is already exists");
+        if (user is null || !user.IsActive)
+        {
+            var mapped = this.mapper.Map<Vacancy>(dto);
 
-        var mapped = this.mapper.Map<Vacancy>(dto);
+            mapped.CreatedAt = DateTime.UtcNow;
 
-        mapped.CreatedAt = DateTime.UtcNow;
-
-        var result = await this.repository.InsertAsync(mapped);
-        await this.repository.SaveAsync();
-        return this.mapper.Map<VacancyForResultDto>(result);
+            var result = await this.repository.InsertAsync(mapped);
+            await this.repository.SaveAsync();
+            return this.mapper.Map<VacancyForResultDto>(result);
+        }
+        else
+            throw new CustomException(500, "Already exist");
+        
     }
 
 

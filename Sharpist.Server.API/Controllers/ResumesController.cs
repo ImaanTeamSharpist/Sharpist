@@ -21,7 +21,7 @@ public class ResumesController : BaseController
     /// <param name="dto"></param>
     /// <returns></returns>
     [HttpPost]
-    public async Task<ActionResult<ResumeForResultDto>> PostAsync([FromBody] ResumeForCreationDto dto)
+    public async Task<ActionResult<ResumeForResultDto>> PostAsync([FromForm] ResumeForCreationDto dto)
         => Ok(new Response
         {
             Code = 200,

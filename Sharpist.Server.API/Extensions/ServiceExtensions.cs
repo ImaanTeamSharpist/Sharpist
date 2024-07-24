@@ -71,6 +71,7 @@ public static class ServiceExtensions
         services.AddScoped<IPdfToTextService, PdfToTextService>();
         services.AddScoped<IResumeService, ResumeService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IOpenAIHelperService, OpenAIHelperService>();
 
 
         //services.AddScoped<IConfigurationSection>(provider =>
