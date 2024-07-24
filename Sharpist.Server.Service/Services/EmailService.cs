@@ -11,7 +11,7 @@ public class EmailService(IConfiguration configuration) : IEmailService
 {
     private readonly IConfiguration _config = configuration.GetSection("Email");
 
-    public async Task SendMessageToEmailAsync(string to, string subject, string message)
+    public async Task<bool> SendMessageToEmailAsync(string to, string subject, string message)
     {
         var email = new MimeMessage();
         email.From.Add(MailboxAddress.Parse(_config["EmailAddress"]));
@@ -25,5 +25,6 @@ public class EmailService(IConfiguration configuration) : IEmailService
         await smtp.AuthenticateAsync(_config["EmailAddress"], _config["Password"]);
         await smtp.SendAsync(email);
         await smtp.DisconnectAsync(true);
+        return true;
     }
 }

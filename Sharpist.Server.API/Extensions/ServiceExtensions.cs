@@ -70,6 +70,7 @@ public static class ServiceExtensions
         services.AddScoped<IVacancyService, VacancyService>();
         services.AddScoped<IPdfToTextService, PdfToTextService>();
         services.AddScoped<IResumeService, ResumeService>();
+        services.AddScoped<IEmailService, EmailService>();
 
 
         //services.AddScoped<IConfigurationSection>(provider =>
